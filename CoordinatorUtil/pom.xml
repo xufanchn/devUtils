@@ -1,0 +1,10 @@
+<dependency>
+    <groupId>com.hikvision.hmap-geoAnalysis</groupId>
+    <artifactId>geoAnalysis-crs</artifactId>
+    <version>2.1.4-RELEASE</version>
+</dependency>
+<dependency>
+    <groupId>org.locationtech.jts</groupId>
+    <artifactId>jts-core</artifactId>
+    <version>1.18.1</version>
+</dependency>
