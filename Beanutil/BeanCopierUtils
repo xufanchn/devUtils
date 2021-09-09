@@ -1,0 +1,163 @@
+package com.xufanchn.sbdemo.common.util;
+
+import org.springframework.cglib.beans.BeanCopier;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
+
+/**
+ * Cglib-BeanCopier 对象转换工具类
+ * <p>
+ * 时间：2021/9/8
+ *
+ * @author xufan9
+ * @version 1.0.0
+ * @implNote Cglib-BeanCopier 对象转换工具类
+ */
+public class BeanCopierUtils {
+
+    public final static Map<String, BeanCopier> BeanCopiers = new ConcurrentHashMap<>();
+
+    /**
+     * 对象转换
+     *
+     * @param source   源
+     * @param supplier 供应商
+     * @return {@link T}
+     */
+    public static <S, T> T copy(S source, Supplier<T> supplier) {
+        return copy(source, supplier, null);
+    }
+
+    /**
+     * 对象转换
+     *
+     * @param source   源
+     * @param supplier 供应商
+     * @param callback 回调方法
+     * @return {@link T}
+     */
+    public static <S, T> T copy(S source, Supplier<T> supplier, CopierCallback<S, T> callback) {
+        if (source == null || supplier == null) {
+            return null;
+        }
+
+        T target = supplier.get();
+        copy(source, target);
+        if (callback != null) {
+            callback.callback(source, target);
+        }
+        return target;
+    }
+
+    /**
+     * 对象转换
+     *
+     * @param source   源
+     * @param supplier 供应商
+     * @return {@link List}<{@link T}>
+     */
+    public static <S, T> List<T> copy(List<S> source, Supplier<T> supplier) {
+        return copyList(source, supplier);
+    }
+
+    /**
+     * 对象转换
+     *
+     * @param source   源
+     * @param supplier 供应商
+     * @param callback 回调方法
+     * @return {@link T}
+     */
+    public static <S, T> List<T> copy(List<S> source, Supplier<T> supplier, CopierCallback<S, T> callback) {
+        return copyList(source, supplier, callback);
+    }
+
+    /**
+     * 转换对象
+     *
+     * @param source 源
+     * @param target 目标
+     */
+    private static <S, T> void copy(S source, T target) {
+        BeanCopier copier = getCopier(source, target);
+        copier.copy(source, target, null);
+    }
+
+    /**
+     * 转换对象列表
+     *
+     * @param source   来源
+     * @param supplier 供应商
+     * @return {@link List}<{@link T}>
+     */
+    public static <S, T> List<T> copyList(List<S> source, Supplier<T> supplier) {
+        return copyList(source, supplier, null);
+    }
+
+    /**
+     * 转换对象列表
+     *
+     * @param source   源
+     * @param supplier 供应商
+     * @param callback 回调方法
+     * @return {@link List}<{@link T}>
+     */
+    public static <S, T> List<T> copyList(List<S> source, Supplier<T> supplier, CopierCallback<S, T> callback) {
+        if (source == null || supplier == null) {
+            return null;
+        }
+
+        List<T> list = new ArrayList<>(source.size());
+        for (S s : source) {
+            T t = supplier.get();
+            copy(s, t);
+            if (callback != null) {
+                callback.callback(s, t);
+            }
+            list.add(t);
+        }
+        return list;
+    }
+
+    /**
+     * 获取BeanCopier
+     *
+     * @param source 源
+     * @param target 目标
+     * @return {@link BeanCopier}
+     */
+    private static <S, T> BeanCopier getCopier(S source, T target) {
+        Class<?> s = source.getClass();
+        Class<?> t = target.getClass();
+        BeanCopier copier;
+        String key = s.getSimpleName() + "->" + t.getSimpleName();
+        if (BeanCopiers.containsKey(key)) {
+            copier = BeanCopiers.get(key);
+        } else {
+            copier = BeanCopier.create(s, t, false);
+            BeanCopiers.put(key, copier);
+        }
+        return copier;
+    }
+
+    /**
+     * 回调接口
+     *
+     * @param <S> 源对象类型
+     * @param <T> 目标对象类型
+     */
+    @FunctionalInterface
+    public interface CopierCallback<S, T> {
+        /**
+         * 回调
+         *
+         * @param s 来源
+         * @param t 目标
+         */
+        void callback(S s, T t);
+    }
+}
