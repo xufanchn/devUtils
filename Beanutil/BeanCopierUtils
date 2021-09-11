@@ -17,9 +17,9 @@ import java.util.function.Supplier;
  * @version 1.0.0
  * @implNote Cglib-BeanCopier 对象转换工具类
  */
-public class BeanCopierUtils {
+public class CopierUtils {
 
-    public final static Map<String, BeanCopier> BeanCopiers = new ConcurrentHashMap<>();
+    private final static Map<String, BeanCopier> BeanCopierMap = new ConcurrentHashMap<>();
 
     /**
      * 对象转换
@@ -41,7 +41,7 @@ public class BeanCopierUtils {
      * @return {@link T}
      */
     public static <S, T> T copy(S source, Supplier<T> supplier, CopierCallback<S, T> callback) {
-        if (source == null || supplier == null) {
+        if (source == null || supplier == null || source instanceof List) {
             return null;
         }
 
@@ -51,29 +51,6 @@ public class BeanCopierUtils {
             callback.callback(source, target);
         }
         return target;
-    }
-
-    /**
-     * 对象转换
-     *
-     * @param source   源
-     * @param supplier 供应商
-     * @return {@link List}<{@link T}>
-     */
-    public static <S, T> List<T> copy(List<S> source, Supplier<T> supplier) {
-        return copyList(source, supplier);
-    }
-
-    /**
-     * 对象转换
-     *
-     * @param source   源
-     * @param supplier 供应商
-     * @param callback 回调方法
-     * @return {@link T}
-     */
-    public static <S, T> List<T> copy(List<S> source, Supplier<T> supplier, CopierCallback<S, T> callback) {
-        return copyList(source, supplier, callback);
     }
 
     /**
@@ -90,35 +67,35 @@ public class BeanCopierUtils {
     /**
      * 转换对象列表
      *
-     * @param source   来源
+     * @param sources  源
      * @param supplier 供应商
      * @return {@link List}<{@link T}>
      */
-    public static <S, T> List<T> copyList(List<S> source, Supplier<T> supplier) {
-        return copyList(source, supplier, null);
+    public static <S, T> List<T> copyList(List<S> sources, Supplier<T> supplier) {
+        return copyList(sources, supplier, null);
     }
 
     /**
      * 转换对象列表
      *
-     * @param source   源
+     * @param sources  源
      * @param supplier 供应商
      * @param callback 回调方法
      * @return {@link List}<{@link T}>
      */
-    public static <S, T> List<T> copyList(List<S> source, Supplier<T> supplier, CopierCallback<S, T> callback) {
-        if (source == null || supplier == null) {
+    public static <S, T> List<T> copyList(List<S> sources, Supplier<T> supplier, CopierCallback<S, T> callback) {
+        if (sources == null || supplier == null) {
             return null;
         }
 
-        List<T> list = new ArrayList<>(source.size());
-        for (S s : source) {
-            T t = supplier.get();
-            copy(s, t);
+        List<T> list = new ArrayList<>(sources.size());
+        for (S source : sources) {
+            T target = supplier.get();
+            copy(source, target);
             if (callback != null) {
-                callback.callback(s, t);
+                callback.callback(source, target);
             }
-            list.add(t);
+            list.add(target);
         }
         return list;
     }
@@ -135,11 +112,11 @@ public class BeanCopierUtils {
         Class<?> t = target.getClass();
         BeanCopier copier;
         String key = s.getSimpleName() + "->" + t.getSimpleName();
-        if (BeanCopiers.containsKey(key)) {
-            copier = BeanCopiers.get(key);
+        if (BeanCopierMap.containsKey(key)) {
+            copier = BeanCopierMap.get(key);
         } else {
             copier = BeanCopier.create(s, t, false);
-            BeanCopiers.put(key, copier);
+            BeanCopierMap.put(key, copier);
         }
         return copier;
     }
